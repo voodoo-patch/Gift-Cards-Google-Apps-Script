@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <base target="_top">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <?!= include('SharedStyles'); ?>
+    <style>
+      .print-card { background: #fff; border: 3px solid #0369a1; border-radius: 16px; margin: 24px auto; max-width: 520px; padding: 30px; text-align: center; }
+      .print-card h1 { color: #0369a1; font-size: 2rem; }
+      .print-code { font-family: monospace; font-size: 1.8rem; font-weight: 700; margin: 24px 0; }
+      #qr-code { height: 200px; margin: 18px auto; width: 200px; }
+      @media print {
+        body { background: #fff; }
+        .no-print { display: none !important; }
+        .page { max-width: none; padding: 0; }
+        .print-card { border-color: #000; box-shadow: none; margin: 0; }
+      }
+    </style>
+  </head>
+  <body>
+    <main class="page">
+      <div id="notice" hidden></div>
+      <article id="print-card" class="print-card">
+        <h1>Carta regalo</h1>
+        <p class="print-code"><?= card.cardCode ?></p>
+        <p><strong>Valore:</strong> <?= card.valueLabel ?></p>
+        <p><strong>Valida fino al:</strong> <?= card.expirationDate ?></p>
+        <img id="qr-code" src="<?= card.qrCodeUrl ?>" alt="Codice QR per la carta regalo">
+        <p>Presentare questa carta al momento dell utilizzo.</p>
+      </article>
+      <div class="no-print page">
+        <button class="primary-button" type="button" onclick="window.print()">Stampa o salva come PDF</button>
+      </div>
+    </main>
+  </body>
+</html>

@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <base target="_top">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <?!= include('SharedStyles'); ?>
+  </head>
+  <body data-app-url="<?= appUrl ?>">
+    <main class="page">
+      <header class="app-header">
+        <h1>Carte regalo</h1>
+        <button class="primary-button" type="button" id="create-button">Crea nuova carta</button>
+      </header>
+      <div class="tabs" role="tablist" aria-label="Stato delle carte">
+        <button class="tab" type="button" role="tab" data-status="active" aria-selected="true">Attive</button>
+        <button class="tab" type="button" role="tab" data-status="redeemed" aria-selected="false">Riscattate</button>
+        <button class="tab" type="button" role="tab" data-status="expired" aria-selected="false">Scadute</button>
+      </div>
+      <label class="form-field" for="card-search">
+        Cerca per codice o email del destinatario
+        <input id="card-search" type="search" autocomplete="off" placeholder="Es. BCK-ABCD1234 o email@example.com">
+      </label>
+      <div id="notice" hidden></div>
+      <section class="panel">
+        <div id="loading" class="loading">Caricamento delle carte...</div>
+        <div id="card-list" class="card-list" hidden></div>
+      </section>
+    </main>
+    <?!= include('SharedClient'); ?>
+    <script>
+      const appUrl = document.body.dataset.appUrl;
+      const listElement = document.getElementById('card-list');
+      const noticeElement = document.getElementById('notice');
+      let cards = [];
+      let selectedStatus = 'active';
+
+      document.getElementById('create-button').addEventListener('click', () => navigateTo(`${appUrl}?page=new`));
+      document.getElementById('card-search').addEventListener('input', renderCards);
+      document.querySelectorAll('.tab').forEach((tab) => {
+        tab.addEventListener('click', () => {
+          selectedStatus = tab.dataset.status;
+          document.querySelectorAll('.tab').forEach((item) => item.setAttribute('aria-selected', item === tab ? 'true' : 'false'));
+          renderCards();
+        });
+      });
+
+      function renderCards() {
+        listElement.replaceChildren();
+        const searchTerm = document.getElementById('card-search').value.trim().toLowerCase();
+        const selectedCards = cards.filter((card) => {
+          if (card.status !== selectedStatus) {
+            return false;
+          }
+          return !searchTerm ||
+            card.cardCode.toLowerCase().includes(searchTerm) ||
+            (card.recipientEmail || '').toLowerCase().includes(searchTerm);
+        });
+        if (!selectedCards.length) {
+          const empty = document.createElement('p');
+          empty.textContent = searchTerm
+            ? 'Nessuna carta corrisponde alla ricerca.'
+            : 'Non ci sono carte in questa sezione.';
+          listElement.appendChild(empty);
+        }
+
+        selectedCards.forEach((card) => {
+          const item = document.createElement('article');
+          item.className = 'card-item';
+          const heading = document.createElement('div');
+          heading.className = 'card-heading';
+          const code = document.createElement('span');
+          code.className = 'card-code';
+          code.textContent = card.cardCode;
+          const status = document.createElement('span');
+          status.className = `status status-${card.status}`;
+          status.textContent = statusLabel(card.status);
+          heading.append(code, status);
+
+          const value = document.createElement('p');
+          value.className = 'meta';
+          value.textContent = `Valore: ${card.valueLabel}`;
+          const expiration = document.createElement('p');
+          expiration.className = 'meta';
+          expiration.textContent = `Scadenza: ${card.expirationDate}`;
+          const recipientEmail = document.createElement('p');
+          recipientEmail.className = 'meta';
+          recipientEmail.textContent = `Destinatario: ${card.recipientEmail || 'Non specificato'}`;
+          const button = document.createElement('button');
+          button.className = 'secondary-button';
+          button.type = 'button';
+          button.textContent = 'Dettagli';
+          button.addEventListener('click', () => navigateTo(`${appUrl}?page=details&card=${encodeURIComponent(card.cardCode)}`));
+          item.append(heading, value, expiration, recipientEmail, button);
+          listElement.appendChild(item);
+        });
+        listElement.hidden = false;
+      }
+
+      runServer('getCardList')
+        .then((result) => {
+          cards = result;
+          document.getElementById('loading').hidden = true;
+          renderCards();
+        })
+        .catch((error) => {
+          document.getElementById('loading').hidden = true;
+          showNotice(noticeElement, error.message, true);
+        });
+    </script>
+  </body>
+</html>

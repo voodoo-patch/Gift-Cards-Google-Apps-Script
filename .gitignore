@@ -1,0 +1,8 @@
+# Google Apps Script local credentials and deployment metadata.
+.clasp.json
+
+# Local editor and operating-system files.
+.vscode/
+.idea/
+*.tmp
+Thumbs.db

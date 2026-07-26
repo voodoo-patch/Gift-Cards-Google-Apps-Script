@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <base target="_top">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <?!= include('SharedStyles'); ?>
+  </head>
+  <body data-app-url="<?= appUrl ?>">
+    <main class="page">
+      <header class="app-header"><h1>Crea carta regalo</h1></header>
+      <div id="notice" hidden></div>
+      <form id="card-form" class="panel">
+        <label class="form-field">Codice carta<input id="card-code" name="cardCode" readonly required></label>
+        <label class="form-field">Data di scadenza<input id="expiration-date" name="expirationDate" type="date" required></label>
+        <label class="form-field">Valore (EUR)<input id="value" name="value" type="number" min="0.01" step="0.01" required></label>
+        <label class="form-field">Email del destinatario (facoltativa)<input id="recipient-email" name="recipientEmail" type="email"></label>
+        <div class="form-actions">
+          <button id="submit-button" class="primary-button" type="submit">Crea carta</button>
+          <button id="cancel-button" class="secondary-button" type="button">Annulla</button>
+        </div>
+      </form>
+    </main>
+    <?!= include('SharedClient'); ?>
+    <script>
+      const appUrl = document.body.dataset.appUrl;
+      const form = document.getElementById('card-form');
+      const notice = document.getElementById('notice');
+      const submitButton = document.getElementById('submit-button');
+
+      document.getElementById('cancel-button').addEventListener('click', () => navigateTo(appUrl));
+      runServer('getNewCardDefaults')
+        .then((defaults) => {
+          document.getElementById('card-code').value = defaults.cardCode;
+          document.getElementById('value').value = defaults.value;
+          document.getElementById('expiration-date').value = defaults.expirationDate;
+        })
+        .catch((error) => showNotice(notice, error.message, true));
+
+      form.addEventListener('submit', (event) => {
+        event.preventDefault();
+        submitButton.disabled = true;
+        showNotice(notice, '', false);
+        const payload = {
+          cardCode: document.getElementById('card-code').value,
+          value: document.getElementById('value').value,
+          expirationDate: document.getElementById('expiration-date').value,
+          recipientEmail: document.getElementById('recipient-email').value
+        };
+        runServer('createCard', payload)
+          .then((result) => {
+            if (result.email.attempted && !result.email.sent) {
+              window.alert(result.email.error);
+            }
+            navigateTo(appUrl);
+          })
+          .catch((error) => {
+            showNotice(notice, error.message, true);
+            submitButton.disabled = false;
+          });
+      });
+    </script>
+  </body>
+</html>

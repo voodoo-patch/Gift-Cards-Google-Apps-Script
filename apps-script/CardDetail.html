@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <base target="_top">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <?!= include('SharedStyles'); ?>
+  </head>
+  <body data-app-url="<?= appUrl ?>" data-card-code="<?= cardCode ?>">
+    <main class="page">
+      <header class="app-header"><h1>Dettaglio carta regalo</h1></header>
+      <div id="notice" hidden></div>
+      <section id="card-panel" class="panel" hidden>
+        <dl class="details">
+          <div><dt>Codice</dt><dd id="card-code"></dd></div>
+          <div><dt>Stato</dt><dd id="card-status"></dd></div>
+          <div><dt>Valore</dt><dd id="card-value"></dd></div>
+          <div><dt>Creata il</dt><dd id="created-at"></dd></div>
+          <div><dt>Scadenza</dt><dd id="expiration-date"></dd></div>
+          <div><dt>Riscattata il</dt><dd id="redeemed-at"></dd></div>
+          <div><dt>Email del destinatario</dt><dd id="recipient-email"></dd></div>
+        </dl>
+        <div class="detail-actions">
+          <button id="redeem-button" class="primary-button" type="button" hidden>Riscatta carta</button>
+          <button id="resend-email-button" class="secondary-button" type="button" hidden>Reinvia conferma email</button>
+          <a id="print-link" class="secondary-button button-link" target="_top">Stampa carta</a>
+          <button id="back-button" class="secondary-button" type="button">Torna all elenco</button>
+        </div>
+      </section>
+      <div id="loading" class="loading">Caricamento della carta...</div>
+    </main>
+    <?!= include('SharedClient'); ?>
+    <script>
+      const appUrl = document.body.dataset.appUrl;
+      const cardCode = document.body.dataset.cardCode;
+      const notice = document.getElementById('notice');
+      const redeemButton = document.getElementById('redeem-button');
+      const resendEmailButton = document.getElementById('resend-email-button');
+
+      document.getElementById('back-button').addEventListener('click', () => navigateTo(appUrl));
+      redeemButton.addEventListener('click', () => {
+        redeemButton.disabled = true;
+        runServer('redeemCard', cardCode)
+          .then((card) => {
+            showNotice(notice, 'Carta regalo riscattata con successo.', false);
+            renderCard(card);
+          })
+          .catch((error) => {
+            showNotice(notice, error.message, true);
+            redeemButton.disabled = false;
+          });
+      });
+
+      resendEmailButton.addEventListener('click', () => {
+        resendEmailButton.disabled = true;
+        runServer('resendConfirmationEmail', cardCode)
+          .then(() => {
+            showNotice(notice, 'Email di conferma reinviata con successo.', false);
+            resendEmailButton.disabled = false;
+          })
+          .catch((error) => {
+            showNotice(notice, error.message, true);
+            resendEmailButton.disabled = false;
+          });
+      });
+
+      function renderCard(card) {
+        document.getElementById('card-code').textContent = card.cardCode;
+        document.getElementById('card-status').textContent = statusLabel(card.status);
+        document.getElementById('card-value').textContent = card.valueLabel;
+        document.getElementById('created-at').textContent = card.createdAt;
+        document.getElementById('expiration-date').textContent = card.expirationDate;
+        document.getElementById('redeemed-at').textContent = card.redeemedAt;
+        document.getElementById('recipient-email').textContent = card.recipientEmail || 'Non specificata';
+        redeemButton.hidden = card.status !== 'active';
+        redeemButton.disabled = false;
+        resendEmailButton.hidden = card.status !== 'active' || !card.recipientEmail;
+        resendEmailButton.disabled = false;
+        document.getElementById('print-link').href = `${appUrl}?page=print&card=${encodeURIComponent(card.cardCode)}`;
+        document.getElementById('loading').hidden = true;
+        document.getElementById('card-panel').hidden = false;
+      }
+
+      runServer('getCardDetails', cardCode)
+        .then(renderCard)
+        .catch((error) => {
+          document.getElementById('loading').hidden = true;
+          showNotice(notice, error.message, true);
+        });
+    </script>
+  </body>
+</html>

@@ -1,0 +1,28 @@
+<script>
+  function runServer(method, argument) {
+    return new Promise((resolve, reject) => {
+      let runner = google.script.run
+        .withSuccessHandler(resolve)
+        .withFailureHandler((error) => reject(new Error(error.message || 'Si e verificato un errore.')));
+      if (typeof argument === 'undefined') {
+        runner[method]();
+      } else {
+        runner[method](argument);
+      }
+    });
+  }
+
+  function showNotice(container, message, isError) {
+    container.hidden = !message;
+    container.textContent = message || '';
+    container.className = `notice ${isError ? 'notice-error' : 'notice-success'}`;
+  }
+
+  function navigateTo(url) {
+    window.top.location.href = url;
+  }
+
+  function statusLabel(status) {
+    return { active: 'Attiva', redeemed: 'Riscattata', expired: 'Scaduta' }[status] || status;
+  }
+</script>
