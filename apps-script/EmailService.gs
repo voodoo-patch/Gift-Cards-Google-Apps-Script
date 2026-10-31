@@ -6,7 +6,7 @@ function sendConfirmationEmail_(card) {
     redeemUrl: card.redeemUrl,
     recipientEmail: card.recipientEmail
   };
-  const subject = `La tua carta regalo ${card.cardCode}`;
+  const subject = `La tua carta regalo Bricokart ${card.cardCode}`;
   const plainText = renderEmailTemplate_('ConfirmationEmailText', templateData, false);
   const html = renderEmailTemplate_('ConfirmationEmailHtml', templateData, true);
   const qrCodeImage = getQrCodeImageBlob_(card.redeemUrl, card.cardCode);
